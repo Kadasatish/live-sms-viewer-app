@@ -1,26 +1,34 @@
+import { promises as fs } from 'fs';
+import { join } from 'path';
+
 let messages = [];
 
 export default function handler(req, res) {
+  const messagesFile = join(process.cwd(), 'messages.json');
+
   if (req.method === 'POST') {
-    let body = '';
+    try {
+      const body = req.body; // Next.js automatically parses JSON
+      const msg = body.message || 'Empty SMS';
+      messages.push(msg);
 
-    req.on('data', chunk => {
-      body += chunk;
-    });
+      // Save to file to persist across serverless invocations
+      fs.writeFile(messagesFile, JSON.stringify(messages, null, 2))
+        .catch(err => console.error('Error saving messages:', err));
 
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        const msg = data.message || 'Empty SMS';
-        messages.push(msg);
-        res.status(200).json({ status: 'received', message: msg });
-      } catch (err) {
-        res.status(400).json({ error: 'Invalid JSON' });
-      }
-    });
+      res.status(200).json({ status: 'received', message: msg });
+    } catch (err) {
+      res.status(400).json({ error: 'Invalid data' });
+    }
   } else if (req.method === 'GET') {
     res.status(200).json(messages);
   } else {
     res.status(405).end();
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: true, // Enable body parsing for POST requests
+  },
+};
