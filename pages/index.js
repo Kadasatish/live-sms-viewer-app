@@ -5,10 +5,16 @@ export default function Home() {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const res = await fetch('/api/sms');
-      const data = await res.json();
-      setMessages(data);
-    }, 1000); // check every second
+      try {
+        const res = await fetch('/api/sms');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setMessages(data); // Update with full array
+        }
+      } catch (err) {
+        console.error('Error fetching SMS:', err);
+      }
+    }, 1000); // Check every second
 
     return () => clearInterval(interval);
   }, []);
@@ -23,4 +29,4 @@ export default function Home() {
       </ul>
     </div>
   );
-  }
+                      }
